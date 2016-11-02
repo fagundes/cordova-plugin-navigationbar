@@ -43,30 +43,6 @@ var NavigationBar = {
 
     isVisible: true,
 
-    //overlaysWebView: function (doOverlay) {
-    //    exec(null, null, "NavigationBar", "overlaysWebView", [doOverlay]);
-    //},
-    //
-    //styleDefault: function () {
-    //    // dark text ( to be used on a light background )
-    //    exec(null, null, "NavigationBar", "styleDefault", []);
-    //},
-    //
-    //styleLightContent: function () {
-    //    // light text ( to be used on a dark background )
-    //    exec(null, null, "NavigationBar", "styleLightContent", []);
-    //},
-    //
-    //styleBlackTranslucent: function () {
-    //    // #88000000 ? Apple says to use lightContent instead
-    //    exec(null, null, "NavigationBar", "styleBlackTranslucent", []);
-    //},
-    //
-    //styleBlackOpaque: function () {
-    //    // #FF000000 ? Apple says to use lightContent instead
-    //    exec(null, null, "NavigationBar", "styleBlackOpaque", []);
-    //},
-
     backgroundColorByName: function (colorname) {
         return NavigationBar.backgroundColorByHexString(namedColors[colorname]);
     },
