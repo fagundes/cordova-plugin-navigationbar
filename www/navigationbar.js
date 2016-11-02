@@ -84,15 +84,15 @@ var NavigationBar = {
         exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString]);
     },
 
-    //hide: function () {
-    //    exec(null, null, "NavigationBar", "hide", []);
-    //    NavigationBar.isVisible = false;
-    //},
-    //
-    //show: function () {
-    //    exec(null, null, "NavigationBar", "show", []);
-    //    NavigationBar.isVisible = true;
-    //}
+    hide: function () {
+        exec(null, null, "NavigationBar", "hide", []);
+        NavigationBar.isVisible = false;
+    },
+
+    show: function () {
+        exec(null, null, "NavigationBar", "show", []);
+        NavigationBar.isVisible = true;
+    }
 
 };
 

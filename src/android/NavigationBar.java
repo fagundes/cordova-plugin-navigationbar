@@ -68,10 +68,10 @@ public class NavigationBar extends CordovaPlugin {
     /**
      * Executes the request and returns PluginResult.
      *
-     * @param action            The action to execute.
-     * @param args              JSONArry of arguments for the plugin.
-     * @param callbackContext   The callback id used when calling back into JavaScript.
-     * @return                  True if the action was valid, false otherwise.
+     * @param action          The action to execute.
+     * @param args            JSONArry of arguments for the plugin.
+     * @param callbackContext The callback id used when calling back into JavaScript.
+     * @return True if the action was valid, false otherwise.
      */
     @Override
     public boolean execute(final String action, final CordovaArgs args, final CallbackContext callbackContext) throws JSONException {
@@ -85,49 +85,68 @@ public class NavigationBar extends CordovaPlugin {
             return true;
         }
 
-//        if ("show".equals(action)) {
-//            this.cordova.getActivity().runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    // SYSTEM_UI_FLAG_FULLSCREEN is available since JellyBean, but we
-//                    // use KitKat here to be aligned with "Fullscreen"  preference
-//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//                        int uiOptions = window.getDecorView().getSystemUiVisibility();
-//                        uiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
-//                        uiOptions &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
-//
-//                        window.getDecorView().setSystemUiVisibility(uiOptions);
-//                    }
-//
-//                    // CB-11197 We still need to update LayoutParams to force navigation bar
-//                    // to be hidden when entering e.g. text fields
-//                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//                }
-//            });
-//            return true;
-//        }
+        if ("show".equals(action)) {
+            this.cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // SYSTEM_UI_FLAG_FULLSCREEN is available since JellyBean, but we
+                    // use KitKat here to be aligned with "Fullscreen"  preference
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        int uiOptions = window.getDecorView().getSystemUiVisibility();
+                        uiOptions &= ~View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+                        uiOptions &= ~View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
-//        if ("hide".equals(action)) {
-//            this.cordova.getActivity().runOnUiThread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    // SYSTEM_UI_FLAG_FULLSCREEN is available since JellyBean, but we
-//                    // use KitKat here to be aligned with "Fullscreen"  preference
-//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//                        int uiOptions = window.getDecorView().getSystemUiVisibility()
-//                                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-//                                | View.SYSTEM_UI_FLAG_FULLSCREEN;
-//
-//                        window.getDecorView().setSystemUiVisibility(uiOptions);
-//                    }
-//
-//                    // CB-11197 We still need to update LayoutParams to force navigation bar
-//                    // to be hidden when entering e.g. text fields
-//                    window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//                }
-//            });
-//            return true;
-//        }
+                        window.getDecorView().setSystemUiVisibility(uiOptions);
+
+                        window.getDecorView().setOnFocusChangeListener(null);
+                        window.getDecorView().setOnSystemUiVisibilityChangeListener(null);
+                    }
+
+                    // CB-11197 We still need to update LayoutParams to force navigation bar
+                    // to be hidden when entering e.g. text fields
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                }
+            });
+            return true;
+        }
+
+        if ("hide".equals(action)) {
+            this.cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    // SYSTEM_UI_FLAG_FULLSCREEN is available since JellyBean, but we
+                    // use KitKat here to be aligned with "Fullscreen"  preference
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        final int uiOptions = window.getDecorView().getSystemUiVisibility()
+                                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+
+                        window.getDecorView().setSystemUiVisibility(uiOptions);
+
+                        window.getDecorView().setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                            @Override
+                            public void onFocusChange(View v, boolean hasFocus) {
+                                if (hasFocus) {
+                                    window.getDecorView().setSystemUiVisibility(uiOptions);
+                                }
+                            }
+                        });
+
+                        window.getDecorView().setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+                            @Override
+                            public void onSystemUiVisibilityChange(int visibility) {
+                                window.getDecorView().setSystemUiVisibility(uiOptions);
+                            }
+                        });
+                    }
+
+                    // CB-11197 We still need to update LayoutParams to force navigation bar
+                    // to be hidden when entering e.g. text fields
+                    //window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                }
+            });
+            return true;
+        }
 
         if ("backgroundColorByHexString".equals(action)) {
             this.cordova.getActivity().runOnUiThread(new Runnable() {
