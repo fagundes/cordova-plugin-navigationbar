@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-navigationbar-color",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Cordova NavigationBar Plugin",
   "cordova": {
     "id": "cordova-plugin-navigationbar-color",
