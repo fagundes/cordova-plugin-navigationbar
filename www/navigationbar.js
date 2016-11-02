@@ -109,4 +109,4 @@ window.setTimeout(function () {
     }, null, "NavigationBar", "_ready", []);
 }, 0);
 
-module.exports = NavigationBar;
+module.exports = NavigationBar ;

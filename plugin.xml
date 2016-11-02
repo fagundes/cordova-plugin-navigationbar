@@ -21,7 +21,7 @@
 <plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
         xmlns:android="http://schemas.android.com/apk/res/android"
         id="cordova-plugin-navigationbar-color"
-        version="0.0.3">
+        version="0.0.4">
 
     <name>NavigationBar</name>
 
@@ -44,7 +44,7 @@
     </js-module>
 
     <platform name="android">
-        <source-file src="src/android/NavigationBar.java" target-dir="src/org/apache/cordova/navigationbar" />
+        <source-file src="src/android/NavigationBar.java" target-dir="src/com/viniciusfagundes/cordova/plugin/navigationbar" />
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="NavigationBarProxy">
