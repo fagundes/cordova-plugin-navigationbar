@@ -169,9 +169,9 @@ public class NavigationBar extends CordovaPlugin {
         if (Build.VERSION.SDK_INT >= 21) {
             if (colorPref != null && !colorPref.isEmpty()) {
                 final Window window = cordova.getActivity().getWindow();
-                // Method and constants not available on all SDKs but we want to be able to compile this code with any SDK
-                window.clearFlags(0x04000000); // SDK 19: WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-                window.addFlags(0x80000000); // SDK 21: WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                
+                window.getDecorView (). setSystemUiVisibility (0x80000000 | 0x00000010); // FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS | SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                
                 try {
                     // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
                     window.getClass().getDeclaredMethod("setNavigationBarColor", int.class).invoke(window, Color.parseColor(colorPref));
