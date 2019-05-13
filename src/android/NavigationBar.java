@@ -59,8 +59,8 @@ public class NavigationBar extends CordovaPlugin {
                 Window window = cordova.getActivity().getWindow();
                 window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
 
-                // Read 'NavigationBarBackgroundColor' from config.xml, default is #000000.
-                setNavigationBarBackgroundColor(preferences.getString("NavigationBarBackgroundColor", "#000000"));
+                // Read 'NavigationBarBackgroundColor' and 'NavigationBarLigth' from config.xml, default is #000000.
+                setNavigationBarBackgroundColor(preferences.getString("NavigationBarBackgroundColor", "#000000"), preferences.getBoolean("NavigationBarLigth", false));
             }
         });
     }
@@ -153,7 +153,7 @@ public class NavigationBar extends CordovaPlugin {
                 @Override
                 public void run() {
                     try {
-                        setNavigationBarBackgroundColor(args.getString(0));
+                        setNavigationBarBackgroundColor(args.getString(0), args.getBoolean(1));
                     } catch (JSONException ignore) {
                         LOG.e(TAG, "Invalid hexString argument, use f.i. '#777777'");
                     }
@@ -165,12 +165,26 @@ public class NavigationBar extends CordovaPlugin {
         return false;
     }
 
-    private void setNavigationBarBackgroundColor(final String colorPref) {
+    private void setNavigationBarBackgroundColor(final String colorPref, Boolean ligthNavigationBar) {
+
+        ligthNavigationBar = ligthNavigationBar == null ? false : ligthNavigationBar;
+
         if (Build.VERSION.SDK_INT >= 21) {
             if (colorPref != null && !colorPref.isEmpty()) {
                 final Window window = cordova.getActivity().getWindow();
-                
-                window.getDecorView (). setSystemUiVisibility (0x80000000 | 0x00000010); // FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS | SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                int uiOptions = window.getDecorView().getSystemUiVisibility();
+                             
+                // 0x80000000 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
+                // 0x00000010 SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+
+                uiOptions = uiOptions | 0x80000000;
+
+                if(Build.VERSION.SDK_INT >= 26 && ligthNavigationBar)
+                    uiOptions = uiOptions | 0x00000010;
+                else
+                    uiOptions = uiOptions & ~0x00000010;
+
+                window.getDecorView().setSystemUiVisibility(uiOptions);
                 
                 try {
                     // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
