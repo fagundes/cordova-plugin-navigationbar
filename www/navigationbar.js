@@ -57,7 +57,7 @@ var NavigationBar = {
             hexString = "#" + split[1] + split[1] + split[2] + split[2] + split[3] + split[3];
         }
 
-        lightNavigationBar = (lightNavigationBar) ? true : false;
+        lightNavigationBar = !!lightNavigationBar;
 
         exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar]);
     },
@@ -77,8 +77,8 @@ var NavigationBar = {
 // prime it. setTimeout so that proxy gets time to init
 window.setTimeout(function () {
     exec(function (res) {
-        if (typeof res == 'object') {
-            if (res.type == 'tap') {
+        if (typeof res === 'object') {
+            if (res.type === 'tap') {
                 cordova.fireWindowEvent('navigationTap');
             }
         } else {
@@ -87,4 +87,4 @@ window.setTimeout(function () {
     }, null, "NavigationBar", "_ready", []);
 }, 0);
 
-module.exports = NavigationBar ;
+module.exports = NavigationBar;
