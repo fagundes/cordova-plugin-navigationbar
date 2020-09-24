@@ -187,8 +187,7 @@ public class NavigationBar extends CordovaPlugin {
                 window.getDecorView().setSystemUiVisibility(uiOptions);
                 
                 try {
-                    // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
-                    window.getClass().getDeclaredMethod("setNavigationBarColor", int.class).invoke(window, Color.parseColor(colorPref));
+                    window.setNavigationBarColor(Color.parseColor(colorPref));
                 } catch (IllegalArgumentException ignore) {
                     LOG.e(TAG, "Invalid hexString argument, use f.i. '#999999'");
                 } catch (Exception ignore) {
