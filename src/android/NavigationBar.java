@@ -21,11 +21,17 @@
 package com.viniciusfagundes.cordova.plugin.navigationbar;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.Insets;
 import android.os.Build;
+import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
+import android.view.WindowInsets;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
@@ -35,6 +41,11 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NavigationBar extends CordovaPlugin {
     private static final String TAG = "NavigationBar";
@@ -60,7 +71,7 @@ public class NavigationBar extends CordovaPlugin {
                 window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
 
                 // Read 'NavigationBarBackgroundColor' and 'NavigationBarLight' from config.xml, default is #000000.
-                setNavigationBarBackgroundColor(preferences.getString("NavigationBarBackgroundColor", "#000000"), preferences.getBoolean("NavigationBarLight", false));
+                setNavigationBarBackgroundColor(preferences.getString("NavigationBarBackgroundColor", "#000000"), preferences.getBoolean("NavigationBarLight", false), preferences.getBoolean("NavigationBarTransparent", false));
             }
         });
     }
@@ -148,12 +159,27 @@ public class NavigationBar extends CordovaPlugin {
             return true;
         }
 
+        if ("size".equals(action)) {
+            Map size = getNavigationBarSize(cordova.getActivity().getApplicationContext());
+            int width = (Integer) size.get("width");
+            int height = (Integer) size.get("height");
+            String position = (String) size.get("position");
+            JSONObject obj = new JSONObject();
+            obj.put("width", pxToDp(width));
+            obj.put("height", pxToDp(height));
+            obj.put("widthInPixels", width);
+            obj.put("heightInPixels", height);
+            obj.put("position", position);
+            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, obj));
+            return true;
+        }
+
         if ("backgroundColorByHexString".equals(action)) {
             this.cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        setNavigationBarBackgroundColor(args.getString(0), args.getBoolean(1));
+                        setNavigationBarBackgroundColor(args.getString(0), args.getBoolean(1), args.getBoolean(2));
                     } catch (JSONException ignore) {
                         LOG.e(TAG, "Invalid hexString argument, use f.i. '#777777'");
                     }
@@ -165,9 +191,77 @@ public class NavigationBar extends CordovaPlugin {
         return false;
     }
 
-    private void setNavigationBarBackgroundColor(final String colorPref, Boolean lightNavigationBar) {
+    public int pxToDp(int px) {
+        float scaleRatio = cordova.getActivity().getResources().getDisplayMetrics().density;
+        int dp = Math.round(px / scaleRatio);
+        return dp;
+    }
+
+    public Map getNavigationBarSize(Context context) {
+        int width = 0;
+        int height = 0;
+        String position = "bottom";
+        if(Build.VERSION.SDK_INT >= 30) {
+            WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            WindowMetrics windowMetrics = windowManager.getCurrentWindowMetrics();
+            Insets insets = windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars());
+            width = insets.left == 0 && insets.right == 0 ? windowMetrics.getBounds().width() : (insets.left > 0 ? insets.left : insets.right);
+            height = insets.top == 0 && insets.bottom == 0 ? windowMetrics.getBounds().height() : (insets.top > 0 ? insets.top : insets.bottom);
+            if(insets.left > 0)
+                position = "left";
+            else if(insets.right > 0)
+                position = "right";
+        } else {
+            Point appUsableSize = getAppUsableScreenSize(context);
+            Point realScreenSize = getRealScreenSize(context);
+            // navigation bar on the side
+            if (appUsableSize.x < realScreenSize.x) {
+                position = "right";
+                width = realScreenSize.x - appUsableSize.x;
+                height = appUsableSize.y;
+            }
+            // navigation bar at the bottom
+            if (appUsableSize.y < realScreenSize.y) {
+                width = appUsableSize.x;
+                height = realScreenSize.y - appUsableSize.y;
+            }
+        }
+        final Map<String, Object> size = new HashMap<>();
+        size.put("width", width);
+        size.put("height", height);
+        size.put("position", position);
+        return size;
+    }
+
+    public Point getAppUsableScreenSize(Context context) {
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = windowManager.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        return size;
+    }
+
+    public Point getRealScreenSize(Context context) {
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        Display display = windowManager.getDefaultDisplay();
+        Point size = new Point();
+
+        if (Build.VERSION.SDK_INT >= 17) {
+            display.getRealSize(size);
+        } else if (Build.VERSION.SDK_INT >= 14) {
+            try {
+                size.x = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
+                size.y = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
+            } catch (IllegalAccessException e) {} catch (InvocationTargetException e) {} catch (NoSuchMethodException e) {}
+        }
+
+        return size;
+    }
+
+    private void setNavigationBarBackgroundColor(final String colorPref, Boolean lightNavigationBar, Boolean transparentNavigationBar) {
 
         lightNavigationBar = lightNavigationBar == null ? false : lightNavigationBar;
+        transparentNavigationBar = transparentNavigationBar == null ? false : transparentNavigationBar;
 
         if (Build.VERSION.SDK_INT >= 21) {
             if (colorPref != null && !colorPref.isEmpty()) {
@@ -176,6 +270,7 @@ public class NavigationBar extends CordovaPlugin {
                              
                 // 0x80000000 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
                 // 0x00000010 SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                // 0x00000200 FLAG_LAYOUT_NO_LIMITS
 
                 uiOptions = uiOptions | 0x80000000;
 
@@ -184,10 +279,15 @@ public class NavigationBar extends CordovaPlugin {
                 else
                     uiOptions = uiOptions & ~0x00000010;
 
+                if(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar)
+                    uiOptions = uiOptions | 0x00000200;
+                else
+                    uiOptions = uiOptions & ~0x00000200;
+
                 window.getDecorView().setSystemUiVisibility(uiOptions);
-                
+
                 try {
-                    window.setNavigationBarColor(Color.parseColor(colorPref));
+                    window.setNavigationBarColor(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar ? Color.TRANSPARENT : Color.parseColor(colorPref));
                 } catch (IllegalArgumentException ignore) {
                     LOG.e(TAG, "Invalid hexString argument, use f.i. '#999999'");
                 } catch (Exception ignore) {
