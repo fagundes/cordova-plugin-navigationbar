@@ -43,9 +43,12 @@ import org.apache.cordova.PluginResult;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+
 
 public class NavigationBar extends CordovaPlugin {
     private static final String TAG = "NavigationBar";
@@ -160,17 +163,27 @@ public class NavigationBar extends CordovaPlugin {
         }
 
         if ("size".equals(action)) {
-            Map size = getNavigationBarSize(cordova.getActivity().getApplicationContext());
-            int width = (Integer) size.get("width");
-            int height = (Integer) size.get("height");
-            String position = (String) size.get("position");
-            JSONObject obj = new JSONObject();
-            obj.put("width", pxToDp(width));
-            obj.put("height", pxToDp(height));
-            obj.put("widthInPixels", width);
-            obj.put("heightInPixels", height);
-            obj.put("position", position);
-            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, obj));
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    Map size = getNavigationBarSize(cordova.getActivity().getApplicationContext());
+                    int width = (Integer) size.get("width");
+                    int height = (Integer) size.get("height");
+                    String position = (String) size.get("position");
+                    try {
+                        JSONObject obj = new JSONObject();
+                        obj.put("width", pxToDp(width));
+                        obj.put("height", pxToDp(height));
+                        obj.put("widthInPixels", width);
+                        obj.put("heightInPixels", height);
+                        obj.put("position", position);
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, obj));
+                    } catch (JSONException e) {
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.JSON_EXCEPTION));
+                    }
+                }
+            });
             return true;
         }
 
@@ -279,10 +292,10 @@ public class NavigationBar extends CordovaPlugin {
                 else
                     uiOptions = uiOptions & ~0x00000010;
 
-                if(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar)
-                    uiOptions = uiOptions | 0x00000200;
+                if(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar) 
+                    uiOptions = uiOptions | 0x00000200; //window.addFlags(0x00000200);
                 else
-                    uiOptions = uiOptions & ~0x00000200;
+                    uiOptions = uiOptions & ~0x00000200; //window.clearFlags(0x00000200);
 
                 window.getDecorView().setSystemUiVisibility(uiOptions);
 
