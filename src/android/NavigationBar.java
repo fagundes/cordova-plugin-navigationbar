@@ -27,6 +27,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.CordovaInterface;
@@ -167,12 +170,14 @@ public class NavigationBar extends CordovaPlugin {
 
     private void setNavigationBarBackgroundColor(final String colorPref, Boolean lightNavigationBar) {
 
-        lightNavigationBar = lightNavigationBar == null ? false : lightNavigationBar;
+        lightNavigationBar = lightNavigationBar != null && lightNavigationBar;
 
         if (Build.VERSION.SDK_INT >= 21) {
             if (colorPref != null && !colorPref.isEmpty()) {
                 final Window window = cordova.getActivity().getWindow();
-                int uiOptions = window.getDecorView().getSystemUiVisibility();
+                final View decorView = window.getDecorView();
+                WindowInsetsControllerCompat wic = ViewCompat.getWindowInsetsController(decorView);
+                int uiOptions = decorView.getSystemUiVisibility();
                              
                 // 0x80000000 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
                 // 0x00000010 SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
@@ -184,7 +189,13 @@ public class NavigationBar extends CordovaPlugin {
                 else
                     uiOptions = uiOptions & ~0x00000010;
 
-                window.getDecorView().setSystemUiVisibility(uiOptions);
+                decorView.setSystemUiVisibility(uiOptions);
+
+                if (lightNavigationBar) {
+                    if (wic != null) wic.setAppearanceLightNavigationBars(true);
+                }else{
+                    if (wic != null) wic.setAppearanceLightNavigationBars(false);
+                }
                 
                 try {
                     // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
