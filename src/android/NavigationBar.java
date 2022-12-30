@@ -33,6 +33,9 @@ import android.view.WindowManager;
 import android.view.WindowMetrics;
 import android.view.WindowInsets;
 
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.CordovaInterface;
@@ -273,31 +276,38 @@ public class NavigationBar extends CordovaPlugin {
 
     private void setNavigationBarBackgroundColor(final String colorPref, Boolean lightNavigationBar, Boolean transparentNavigationBar) {
 
-        lightNavigationBar = lightNavigationBar == null ? false : lightNavigationBar;
-        transparentNavigationBar = transparentNavigationBar == null ? false : transparentNavigationBar;
+        lightNavigationBar = lightNavigationBar != null && lightNavigationBar;
+        transparentNavigationBar = transparentNavigationBar != null && transparentNavigationBar;
 
         if (Build.VERSION.SDK_INT >= 21) {
             if (colorPref != null && !colorPref.isEmpty()) {
                 final Window window = cordova.getActivity().getWindow();
-                int uiOptions = window.getDecorView().getSystemUiVisibility();
-                             
+                final View decorView = window.getDecorView();
+                int uiOptions = decorView.getSystemUiVisibility();
+
                 // 0x80000000 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
                 // 0x00000010 SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
                 // 0x00000200 FLAG_LAYOUT_NO_LIMITS
 
                 uiOptions = uiOptions | 0x80000000;
 
-                if(Build.VERSION.SDK_INT >= 26 && lightNavigationBar)
-                    uiOptions = uiOptions | 0x00000010;
-                else
+                if(Build.VERSION.SDK_INT >= 26) {
+                    WindowInsetsControllerCompat windowInsetsControllerCompat = WindowCompat.getInsetsController(window, decorView);
+
+                    if(lightNavigationBar)
+                        windowInsetsControllerCompat.setAppearanceLightNavigationBars(true);
+                    else
+                        windowInsetsControllerCompat.setAppearanceLightNavigationBars(false);
+                } else {
                     uiOptions = uiOptions & ~0x00000010;
+                }
 
                 if(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar) 
-                    uiOptions = uiOptions | 0x00000200; //window.addFlags(0x00000200);
+                    uiOptions = uiOptions | 0x00000200; // window.addFlags(0x00000200);
                 else
-                    uiOptions = uiOptions & ~0x00000200; //window.clearFlags(0x00000200);
+                    uiOptions = uiOptions & ~0x00000200; // window.clearFlags(0x00000200);
 
-                window.getDecorView().setSystemUiVisibility(uiOptions);
+                decorView.setSystemUiVisibility(uiOptions);
 
                 try {
                     window.setNavigationBarColor(Build.VERSION.SDK_INT >= 30 && transparentNavigationBar ? Color.TRANSPARENT : Color.parseColor(colorPref));
