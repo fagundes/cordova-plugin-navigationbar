@@ -70,6 +70,10 @@ var NavigationBar = {
     show: function () {
         exec(null, null, "NavigationBar", "show", []);
         NavigationBar.isVisible = true;
+    },
+
+    height: function (success, error) {
+        exec(success, error, "NavigationBar", "height", []);
     }
 
 };

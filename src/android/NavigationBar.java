@@ -21,8 +21,12 @@
 package com.viniciusfagundes.cordova.plugin.navigationbar;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.Build;
+import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -82,6 +86,56 @@ public class NavigationBar extends CordovaPlugin {
         if ("_ready".equals(action)) {
             boolean navigationBarVisible = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_FULLSCREEN) == 0;
             callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, navigationBarVisible));
+            return true;
+        }
+
+        if ("height".equals(action)) {
+            this.cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Context context = cordova.getContext();
+                    Context contextApplication = cordova.getActivity().getApplicationContext();
+                    Resources resources = contextApplication.getResources();
+                    WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                    Display display = windowManager.getDefaultDisplay();
+                    Point usableScreenSize = new Point();
+                    display.getSize(usableScreenSize);
+
+                    Point realScreenSize = new Point();
+                    if (Build.VERSION.SDK_INT >= 17) {
+                        display.getRealSize(realScreenSize);
+                    } else if (Build.VERSION.SDK_INT >= 14) {
+                        try {
+                            realScreenSize.x = (Integer) Display.class.getMethod("getRawWidth").invoke(display);
+                            realScreenSize.y = (Integer) Display.class.getMethod("getRawHeight").invoke(display);
+                        } catch (IllegalAccessException e) {} catch (java.lang.reflect.InvocationTargetException e) {} catch (NoSuchMethodException e) {}
+                    }
+
+                    float density = resources.getDisplayMetrics().density;
+                    int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+                    if (resourceId > 0) {
+                        int navBarHeight = resources.getDimensionPixelSize(resourceId);
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, navBarHeight / density));
+                    } else if (usableScreenSize.x < realScreenSize.x) {
+                        // navigation bar on the side
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, 0));
+                    } else if (usableScreenSize.y < realScreenSize.y) {
+                        // navigation bar at the bottom
+
+                        int statusBarHeight = -1;
+                        resourceId = resources.getIdentifier("status_bar_height", "dimen","android");
+                        if (resourceId > 0) {
+                            statusBarHeight = resources.getDimensionPixelSize(resourceId);
+                        } else {
+                            statusBarHeight = 0;
+                        }
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, (realScreenSize.y - usableScreenSize.y - statusBarHeight) / density));
+                    } else {
+                        // navigation bar is not present
+                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, 0));
+                    }
+                }
+            });
             return true;
         }
 
@@ -173,7 +227,7 @@ public class NavigationBar extends CordovaPlugin {
             if (colorPref != null && !colorPref.isEmpty()) {
                 final Window window = cordova.getActivity().getWindow();
                 int uiOptions = window.getDecorView().getSystemUiVisibility();
-                             
+
                 // 0x80000000 FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS
                 // 0x00000010 SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
 
@@ -185,7 +239,7 @@ public class NavigationBar extends CordovaPlugin {
                     uiOptions = uiOptions & ~0x00000010;
 
                 window.getDecorView().setSystemUiVisibility(uiOptions);
-                
+
                 try {
                     // Using reflection makes sure any 5.0+ device will work without having to compile with SDK level 21
                     window.getClass().getDeclaredMethod("setNavigationBarColor", int.class).invoke(window, Color.parseColor(colorPref));
