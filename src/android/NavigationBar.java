@@ -38,6 +38,7 @@ import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
+import org.json.JSONObject;
 import org.json.JSONException;
 
 public class NavigationBar extends CordovaPlugin {
@@ -112,28 +113,31 @@ public class NavigationBar extends CordovaPlugin {
                     }
 
                     float density = resources.getDisplayMetrics().density;
+
+                    int navigationBarHeight = 0;
                     int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
                     if (resourceId > 0) {
-                        int navBarHeight = resources.getDimensionPixelSize(resourceId);
-                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, navBarHeight / density));
-                    } else if (usableScreenSize.x < realScreenSize.x) {
-                        // navigation bar on the side
-                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, 0));
-                    } else if (usableScreenSize.y < realScreenSize.y) {
-                        // navigation bar at the bottom
-
-                        int statusBarHeight = -1;
-                        resourceId = resources.getIdentifier("status_bar_height", "dimen","android");
-                        if (resourceId > 0) {
-                            statusBarHeight = resources.getDimensionPixelSize(resourceId);
-                        } else {
-                            statusBarHeight = 0;
-                        }
-                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, (realScreenSize.y - usableScreenSize.y - statusBarHeight) / density));
-                    } else {
-                        // navigation bar is not present
-                        callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, 0));
+                        navigationBarHeight = resources.getDimensionPixelSize(resourceId);
                     }
+
+                    int statusBarHeight = 0;
+                    resourceId = resources.getIdentifier("status_bar_height", "dimen","android");
+                    if (resourceId > 0) {
+                        statusBarHeight = resources.getDimensionPixelSize(resourceId);
+                    }
+
+                    JSONObject result_as_json = new JSONObject();
+                    try {
+                        result_as_json.put("rss", realScreenSize.y);
+                        result_as_json.put("uss", usableScreenSize.y);
+                        result_as_json.put("den", density);
+                        result_as_json.put("nbh", navigationBarHeight);
+                        result_as_json.put("sbh", statusBarHeight);
+                    } catch (JSONException e) {
+                        LOG.w(TAG, "Invalid JSON result: " + e);
+                    }
+
+                    callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, result_as_json));
                 }
             });
             return true;
