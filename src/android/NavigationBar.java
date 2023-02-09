@@ -227,6 +227,12 @@ public class NavigationBar extends CordovaPlugin {
                 position = "left";
             else if(insets.right > 0)
                 position = "right";
+            // If there is no navigation bar
+            if(insets.left == 0 && insets.right == 0 && insets.top == 0 && insets.bottom == 0) {
+                width = 0;
+                height = 0;
+                position = "bottom";
+            }
         } else {
             Point appUsableSize = getAppUsableScreenSize(context);
             Point realScreenSize = getRealScreenSize(context);
