@@ -43,11 +43,11 @@ var NavigationBar = {
 
     isVisible: true,
 
-    backgroundColorByName: function (colorname, lightNavigationBar) {
-        return NavigationBar.backgroundColorByHexString(namedColors[colorname], lightNavigationBar);
+    backgroundColorByName: function (colorname, lightNavigationBar, transparentNavigationBar) {
+        return NavigationBar.backgroundColorByHexString(namedColors[colorname], lightNavigationBar, transparentNavigationBar);
     },
 
-    backgroundColorByHexString: function (hexString, lightNavigationBar) {
+    backgroundColorByHexString: function (hexString, lightNavigationBar, transparentNavigationBar) {
         if (hexString.charAt(0) !== "#") {
             hexString = "#" + hexString;
         }
@@ -58,8 +58,13 @@ var NavigationBar = {
         }
 
         lightNavigationBar = (lightNavigationBar) ? true : false;
+        transparentNavigationBar = (transparentNavigationBar) ? true : false;
 
-        exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar]);
+        exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar, transparentNavigationBar]);
+    },
+
+    size: function (onSuccess, onError) {
+        exec(onSuccess, onError, 'NavigationBar', 'size', []);
     },
 
     hide: function () {

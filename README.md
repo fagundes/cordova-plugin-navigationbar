@@ -24,6 +24,12 @@ Preferences
 <preference name="NavigationBarLight" value="true" />
 ```
 
+- __NavigationBarTransparent__ (boolean, defaults to __false__). Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
+
+```xml
+<preference name="NavigationBarTransparent" value="true" />
+```
+
 Methods
 -------
 This plugin defines global `NavigationBar` object.
@@ -44,19 +50,21 @@ function onDeviceReady()
 Set color of navigation bar by hex string.
 
 ```js
-NavigationBar.backgroundColorByHexString(String colorHex, Boolean lightNavigationBar = false);
+NavigationBar.backgroundColorByHexString(String colorHex, Boolean lightNavigationBar = false, Boolean transparentNavigationBar = false);
 ```
 
 -  __colorHex__ Color hex string. Set the color of navigation bar.
 
 -  __lightNavigationBar__ Change the color of the buttons in the navigation bar to black, use in light colors of the navigation bar (Android 8.0 or higher).
 
+-  __transparentNavigationBar__ Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
+
 #### NavigationBar.backgroundColorByName
 
 Set color of navigation bar by color name.
 
 ```js
-NavigationBar.backgroundColorByName(String colorName, Boolean lightNavigationBar = false);
+NavigationBar.backgroundColorByName(String colorName, Boolean lightNavigationBar = false, Boolean transparentNavigationBar = false);
 ```
 
 -  __colorName__ Color name. Set the color of navigation bar.
@@ -77,6 +85,24 @@ NavigationBar.backgroundColorByName(String colorName, Boolean lightNavigationBar
 - - `brown`: Equals #A52A2A
 
 -  __lightNavigationBar__ Change the color of the buttons in the navigation bar to black, use in light colors of the navigation bar (Android 8.0 or higher).
+
+-  __transparentNavigationBar__ Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
+
+#### NavigationBar.size
+
+Get the width, height and position of the navigation bar, these values can change depending on whether the device is in portrait or landscape, you can use `window.addEventListener("resize", yourFunction);` to always have the navigation bar size updated.
+
+```js
+NavigationBar.size(function(size) {
+    size = {
+        width: int,
+        height: int,
+        widthInPixels: int,
+        heightInPixels: int,
+        position: string, // bottom, left and right
+    };
+});
+```
 
 #### NavigationBar.hide
 
