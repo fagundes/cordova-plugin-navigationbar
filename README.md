@@ -1,121 +1,152 @@
 # cordova-plugin-navigationbar-color
 
-> The `NavigationBar` object provides some functions to control the Android device navigation bar.
+Cordova plugin for controlling the Android system navigation bar on legacy
+Android applications.
+
+## Compatibility
+
+Version 0.1.1 is the maintained legacy release. It is tested with the following
+platform range:
+
+| cordova-android | Android API | Android version |
+| --- | --- | --- |
+| 7.1.4 | 19-27 | 4.4-8.1 |
+| 8.1.0 | 19-28 | 4.4-9 |
+| 9.1.0 | 22-29 | 5.1-10 |
+
+Feature availability depends on the device API:
+
+| Feature | Minimum API |
+| --- | --- |
+| Show or hide the navigation bar | 19 (Android 4.4) |
+| Set the navigation bar color | 21 (Android 5.0) |
+| Use dark navigation bar icons | 26 (Android 8.0) |
+| Use a transparent navigation bar | 30 (Android 11) |
+
+Android 4.4-10 and cordova-android 7-9 are end-of-life platforms. This release
+keeps the plugin's own dependency tree free of known vulnerabilities, but it
+cannot make an end-of-life Android or Cordova toolchain secure.
 
 ## Installation
 
-    cordova plugin add cordova-plugin-navigationbar-color
+```sh
+cordova plugin add cordova-plugin-navigationbar-color@0.1.1
+```
 
-Preferences
------------
+The `NavigationBar` global becomes available after Cordova's `deviceready`
+event.
 
-#### config.xml
+## Preferences
 
--  __NavigationBarBackgroundColor__ (color hex string, default value __#000000__). Color of navigation bar.
+Set the initial navigation bar color in the application's `config.xml`:
 
 ```xml
 <preference name="NavigationBarBackgroundColor" value="#000000" />
 ```
-        
 
-- __NavigationBarLight__ (boolean, defaults to __false__). Change the color of the buttons in the navigation bar to black, use in light colors of the navigation bar (Android 8.0 or higher).
+Use dark navigation icons on a light background on Android 8.0 or newer:
 
 ```xml
 <preference name="NavigationBarLight" value="true" />
 ```
 
-- __NavigationBarTransparent__ (boolean, defaults to __false__). Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
+Make the navigation bar transparent and allow the WebView to extend behind it
+on Android 11 or newer:
 
 ```xml
 <preference name="NavigationBarTransparent" value="true" />
 ```
 
-Methods
--------
-This plugin defines global `NavigationBar` object.
+## API
 
-Although in the global scope, it is not available until after the `deviceready` event.
+### `NavigationBar.backgroundColorByHexString(color, lightNavigationBar, transparentNavigationBar)`
 
-```js
-document.addEventListener("deviceready", onDeviceReady, false);
+Sets the navigation bar color. Accepted hexadecimal formats are `RGB`, `ARGB`,
+`RRGGBB`, and `AARRGGBB`, with or without the leading `#`. Short formats are
+expanded before being sent to Android. Invalid values are logged and ignored.
 
-function onDeviceReady()
-{
-    console.log(NavigationBar);
-}
-```
-
-#### NavigationBar.backgroundColorByHexString
-
-Set color of navigation bar by hex string.
+The `lightNavigationBar` and `transparentNavigationBar` arguments are optional
+and default to `false`. Transparency is supported on Android 11 or newer.
 
 ```js
-NavigationBar.backgroundColorByHexString(String colorHex, Boolean lightNavigationBar = false, Boolean transparentNavigationBar = false);
+NavigationBar.backgroundColorByHexString("#1e88e5", false);
+NavigationBar.backgroundColorByHexString("#fff", true);
+NavigationBar.backgroundColorByHexString("#000000", false, true);
 ```
 
--  __colorHex__ Color hex string. Set the color of navigation bar.
+### `NavigationBar.backgroundColorByName(name, lightNavigationBar, transparentNavigationBar)`
 
--  __lightNavigationBar__ Change the color of the buttons in the navigation bar to black, use in light colors of the navigation bar (Android 8.0 or higher).
+Sets one of the built-in colors: `black`, `darkGray`, `lightGray`, `white`,
+`gray`, `red`, `green`, `blue`, `cyan`, `yellow`, `magenta`, `orange`, `purple`,
+or `brown`.
 
--  __transparentNavigationBar__ Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
-
-#### NavigationBar.backgroundColorByName
-
-Set color of navigation bar by color name.
+The `lightNavigationBar` and `transparentNavigationBar` arguments are optional
+and default to `false`.
 
 ```js
-NavigationBar.backgroundColorByName(String colorName, Boolean lightNavigationBar = false, Boolean transparentNavigationBar = false);
+NavigationBar.backgroundColorByName("white", true);
+NavigationBar.backgroundColorByName("black", false, true);
 ```
 
--  __colorName__ Color name. Set the color of navigation bar.
-- - __Possible values__
-- - `black`: Equals #000000
-- - `darkGray`: Equals #A9A9A9
-- - `lightGray`: Equals #D3D3D3
-- - `white`: Equals #FFFFFF
-- - `gray`: Equals #808080
-- - `red`: Equals #FF0000
-- - `green`: Equals #00FF00
-- - `blue`: Equals #0000FF
-- - `cyan`: Equals #00FFFF
-- - `yellow`: Equals #FFFF00
-- - `magenta`: Equals #FF00FF
-- - `orange`: Equals #FFA500
-- - `purple`: Equals #800080
-- - `brown`: Equals #A52A2A
+### `NavigationBar.hide()` and `NavigationBar.show()`
 
--  __lightNavigationBar__ Change the color of the buttons in the navigation bar to black, use in light colors of the navigation bar (Android 8.0 or higher).
-
--  __transparentNavigationBar__ Makes the navigation bar transparent and overlay it with the webview (Android 11.0 or higher).
-
-#### NavigationBar.size
-
-Get the width, height and position of the navigation bar, these values can change depending on whether the device is in portrait or landscape, you can use `window.addEventListener("resize", yourFunction);` to always have the navigation bar size updated.
-
-```js
-NavigationBar.size(function(size) {
-    size = {
-        width: int,
-        height: int,
-        widthInPixels: int,
-        heightInPixels: int,
-        position: string, // bottom, left and right
-    };
-});
-```
-
-#### NavigationBar.hide
-
-Hide the navigation bar.
+Hides the navigation bar in immersive mode or shows it again. These methods do
+not change the Android status bar.
 
 ```js
 NavigationBar.hide();
-```
-
-#### NavigationBar.show
-
-Shows the navigation bar.
-
-```js
 NavigationBar.show();
 ```
+
+### `NavigationBar.size(success, error)`
+
+Returns the navigation bar dimensions and position. The values can change after
+a screen rotation or another window-size change.
+
+```js
+NavigationBar.size(function (size) {
+    console.log(size.width);
+    console.log(size.height);
+    console.log(size.widthInPixels);
+    console.log(size.heightInPixels);
+    console.log(size.position); // "bottom", "left", or "right"
+}, function (error) {
+    console.error(error);
+});
+```
+
+The `width` and `height` values use density-independent pixels. The
+`widthInPixels` and `heightInPixels` values use physical pixels.
+
+Listen for the `resize` event if the application needs to update these values
+after an orientation or window-size change:
+
+```js
+window.addEventListener("resize", function () {
+    NavigationBar.size(function (size) {
+        console.log(size);
+    });
+});
+```
+
+### `NavigationBar.isVisible`
+
+Contains the initial native visibility reported at startup and is updated when
+`hide()` or `show()` is called. It is a compatibility cache, not a live query of
+changes made outside the plugin.
+
+## Development
+
+The repository has no npm runtime or development dependencies.
+
+```sh
+npm test
+npm audit --audit-level=low
+npm run test:package
+```
+
+See [RELEASING.md](RELEASING.md) for the complete validation matrix.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).

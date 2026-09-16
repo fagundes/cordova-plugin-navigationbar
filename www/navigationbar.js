@@ -39,28 +39,83 @@ var namedColors = {
     "brown": "#A52A2A"
 };
 
+function logInvalidColor(value) {
+    if (typeof console !== "undefined" && typeof console.error === "function") {
+        console.error("NavigationBar: invalid color " + String(value));
+    }
+}
+
+function normalizeHexColor(hexString) {
+    var split;
+
+    if (typeof hexString !== "string") {
+        return null;
+    }
+
+    hexString = hexString.trim();
+
+    if (hexString.charAt(0) !== "#") {
+        hexString = "#" + hexString;
+    }
+
+    if (!/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(hexString)) {
+        return null;
+    }
+
+    if (hexString.length === 4 || hexString.length === 5) {
+        split = hexString.split("");
+        hexString = "#";
+        split.slice(1).forEach(function (character) {
+            hexString += character + character;
+        });
+    }
+
+    return hexString;
+}
+
 var NavigationBar = {
 
     isVisible: true,
-
+  
     backgroundColorByName: function (colorname, lightNavigationBar, transparentNavigationBar) {
-        return NavigationBar.backgroundColorByHexString(namedColors[colorname], lightNavigationBar, transparentNavigationBar);
+        if (!Object.prototype.hasOwnProperty.call(namedColors, colorname)) {
+            logInvalidColor(colorname);
+            return;
+        }
+
+        return NavigationBar.backgroundColorByHexString(
+            namedColors[colorname],
+            lightNavigationBar,
+            transparentNavigationBar
+        );
     },
 
     backgroundColorByHexString: function (hexString, lightNavigationBar, transparentNavigationBar) {
-        if (hexString.charAt(0) !== "#") {
-            hexString = "#" + hexString;
+        var originalValue = hexString;
+
+        hexString = normalizeHexColor(originalValue);
+        if (hexString === null) {
+            logInvalidColor(originalValue);
+            return;
         }
 
-        if (hexString.length === 4) {
-            var split = hexString.split("");
-            hexString = "#" + split[1] + split[1] + split[2] + split[2] + split[3] + split[3];
-        }
+        lightNavigationBar = !!lightNavigationBar;
+        transparentNavigationBar = !!transparentNavigationBar;
 
-        lightNavigationBar = (lightNavigationBar) ? true : false;
-        transparentNavigationBar = (transparentNavigationBar) ? true : false;
+        exec(
+            null,
+            null,
+            "NavigationBar",
+            "backgroundColorByHexString",
+            [
+                hexString,
+                lightNavigationBar,
+                transparentNavigationBar
+            ]
+        );
 
         exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar, transparentNavigationBar]);
+
     },
 
     size: function (onSuccess, onError) {
@@ -82,8 +137,8 @@ var NavigationBar = {
 // prime it. setTimeout so that proxy gets time to init
 window.setTimeout(function () {
     exec(function (res) {
-        if (typeof res == 'object') {
-            if (res.type == 'tap') {
+        if (typeof res === "object") {
+            if (res.type === "tap") {
                 cordova.fireWindowEvent('navigationTap');
             }
         } else {
@@ -92,4 +147,4 @@ window.setTimeout(function () {
     }, null, "NavigationBar", "_ready", []);
 }, 0);
 
-module.exports = NavigationBar ;
+module.exports = NavigationBar;
