@@ -4,6 +4,7 @@
 
 | Version | Support status |
 | --- | --- |
+| 0.2.x | Supported |
 | 0.1.1 | Legacy security and correctness fixes |
 | 0.1.0 and older | Unsupported |
 
@@ -12,10 +13,10 @@
 The npm package contains no production or development dependencies. A clean
 `npm audit` therefore covers the dependency tree distributed by this plugin.
 
-Version 0.1.1 intentionally supports end-of-life Android and cordova-android
-versions. Vulnerabilities in the Android operating system, WebView, Java,
-Gradle, Cordova CLI, or host application's dependencies are outside this
-plugin's security boundary and must be assessed by the application maintainer.
+Android, Cordova, Java, Gradle, WebView, and application dependencies are host
+toolchain components and are outside the plugin package's dependency tree.
+Several compatible Android and cordova-android versions are end of life, so
+application maintainers must assess those components separately.
 
 ## Reporting a vulnerability
 

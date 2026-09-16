@@ -3,6 +3,8 @@ package com.viniciusfagundes.cordova.plugin.navigationbar.test;
 import android.os.Build;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
 import org.apache.cordova.CallbackContext;
@@ -24,16 +26,33 @@ public class NavigationBarInspector extends CordovaPlugin {
             @Override
             public void run() {
                 Window window = cordova.getActivity().getWindow();
-                int uiOptions = window.getDecorView().getSystemUiVisibility();
+                View decorView = window.getDecorView();
+                int uiOptions = decorView.getSystemUiVisibility();
                 JSONObject state = new JSONObject();
 
                 try {
+                    boolean navigationBarHidden =
+                            (uiOptions & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) != 0;
+                    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                            && (uiOptions & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0;
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        WindowInsets insets = decorView.getRootWindowInsets();
+                        if (insets != null) {
+                            navigationBarHidden = !insets.isVisible(
+                                    WindowInsets.Type.navigationBars());
+                        }
+
+                        WindowInsetsController controller = window.getInsetsController();
+                        if (controller != null) {
+                            lightNavigationBar = (controller.getSystemBarsAppearance()
+                                    & WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS) != 0;
+                        }
+                    }
+
                     state.put("sdk", Build.VERSION.SDK_INT);
-                    state.put("navigationBarHidden",
-                            (uiOptions & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) != 0);
-                    state.put("lightNavigationBar",
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                                    && (uiOptions & View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) != 0);
+                    state.put("navigationBarHidden", navigationBarHidden);
+                    state.put("lightNavigationBar", lightNavigationBar);
                     state.put("statusBarFullscreen",
                             (window.getAttributes().flags
                                     & WindowManager.LayoutParams.FLAG_FULLSCREEN) != 0);
@@ -42,6 +61,13 @@ public class NavigationBarInspector extends CordovaPlugin {
                         state.put("navigationBarColor", window.getNavigationBarColor());
                     } else {
                         state.put("navigationBarColor", JSONObject.NULL);
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        state.put("navigationBarContrastEnforced",
+                                window.isNavigationBarContrastEnforced());
+                    } else {
+                        state.put("navigationBarContrastEnforced", JSONObject.NULL);
                     }
 
                     callbackContext.success(state);

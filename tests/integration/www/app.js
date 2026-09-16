@@ -38,6 +38,33 @@
             "status bar fullscreen state changed");
     }
 
+    function assertNavigationBarSize(size) {
+        assert(size && typeof size === "object", "size() returned no result");
+        assert(typeof size.width === "number" && size.width >= 0,
+            "invalid navigation bar width");
+        assert(typeof size.height === "number" && size.height >= 0,
+            "invalid navigation bar height");
+        assert(typeof size.widthInPixels === "number" && size.widthInPixels >= 0,
+            "invalid navigation bar pixel width");
+        assert(typeof size.heightInPixels === "number" && size.heightInPixels >= 0,
+            "invalid navigation bar pixel height");
+        assert(["bottom", "left", "right"].indexOf(size.position) !== -1,
+            "invalid navigation bar position");
+    }
+
+    function readSize(success) {
+        NavigationBar.size(function (size) {
+            try {
+                assertNavigationBarSize(size);
+                success(size);
+            } catch (error) {
+                fail(error.message);
+            }
+        }, function (message) {
+            fail("size error: " + message);
+        });
+    }
+
     function confirmRotation() {
         var orientation = Number(window.orientation);
         var isLandscape = Math.abs(orientation) === 90
@@ -157,7 +184,9 @@
 
             NavigationBar.hide();
             afterUiChange(function () {
-                inspect(testShow);
+                readSize(function () {
+                    inspect(testShow);
+                });
             });
         } catch (error) {
             fail(error.message);
@@ -167,17 +196,41 @@
     function testColor(state) {
         try {
             assertStatusBarUnchanged(state);
-            if (state.sdk >= 21) {
+            if (state.sdk >= 21 && state.sdk < 35) {
                 assert((state.navigationBarColor >>> 0) === 0xff112233,
                     "navigation bar color was not applied");
-            } else {
+            } else if (state.sdk < 21) {
                 assert(state.navigationBarColor === null,
                     "navigation bar color should be unavailable before API 21");
             }
 
-            NavigationBar.backgroundColorByHexString("#fff", true);
-            afterUiChange(function () {
-                inspect(testHide);
+            readSize(function () {
+                if (state.sdk >= 30) {
+                    NavigationBar.backgroundColorByHexString("#000000", false, true);
+                    afterUiChange(function () {
+                        inspect(function (transparentState) {
+                            try {
+                                assertStatusBarUnchanged(transparentState);
+                                assert((transparentState.navigationBarColor >>> 0) === 0,
+                                    "transparent navigation bar was not applied");
+                                assert(transparentState.navigationBarContrastEnforced === false,
+                                    "navigation bar contrast remained enforced");
+                                NavigationBar.backgroundColorByHexString("#fff", true, false);
+                                afterUiChange(function () {
+                                    inspect(testHide);
+                                });
+                            } catch (error) {
+                                fail(error.message);
+                            }
+                        });
+                    });
+                    return;
+                }
+
+                NavigationBar.backgroundColorByHexString("#fff", true);
+                afterUiChange(function () {
+                    inspect(testHide);
+                });
             });
         } catch (error) {
             fail(error.message);
@@ -190,7 +243,7 @@
                 baselineStatusBarFullscreen = initialState.statusBarFullscreen;
                 assert(initialState.navigationBarHidden === false,
                     "navigation bar was unexpectedly hidden initially");
-                if (initialState.sdk >= 21) {
+                if (initialState.sdk >= 21 && initialState.sdk < 35) {
                     assert((initialState.navigationBarColor >>> 0) === 0xff123456,
                         "initial NavigationBarBackgroundColor was not applied");
                 }
