@@ -27,6 +27,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.CordovaInterface;
@@ -185,6 +188,8 @@ public class NavigationBar extends CordovaPlugin {
 
         final Window window = cordova.getActivity().getWindow();
         final View decorView = window.getDecorView();
+        final WindowInsetsControllerCompat controller =
+                ViewCompat.getWindowInsetsController(decorView);
         int uiOptions = decorView.getSystemUiVisibility();
 
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
@@ -197,6 +202,11 @@ public class NavigationBar extends CordovaPlugin {
         }
 
         decorView.setSystemUiVisibility(uiOptions);
+
+        if (controller != null) {
+            controller.setAppearanceLightNavigationBars(lightNavigationBar);
+        }
+
         window.setNavigationBarColor(color);
     }
 
