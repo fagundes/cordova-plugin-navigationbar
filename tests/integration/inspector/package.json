@@ -1,0 +1,12 @@
+{
+  "name": "cordova-plugin-navigationbar-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "cordova": {
+    "id": "cordova-plugin-navigationbar-inspector",
+    "platforms": [
+      "android"
+    ]
+  },
+  "license": "Apache-2.0"
+}
