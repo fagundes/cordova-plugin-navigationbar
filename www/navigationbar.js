@@ -76,18 +76,23 @@ function normalizeHexColor(hexString) {
 var NavigationBar = {
 
     isVisible: true,
-
-    backgroundColorByName: function (colorname, lightNavigationBar) {
+  
+    backgroundColorByName: function (colorname, lightNavigationBar, transparentNavigationBar) {
         if (!Object.prototype.hasOwnProperty.call(namedColors, colorname)) {
             logInvalidColor(colorname);
             return;
         }
 
-        return NavigationBar.backgroundColorByHexString(namedColors[colorname], lightNavigationBar);
+        return NavigationBar.backgroundColorByHexString(
+            namedColors[colorname],
+            lightNavigationBar,
+            transparentNavigationBar
+        );
     },
 
-    backgroundColorByHexString: function (hexString, lightNavigationBar) {
+    backgroundColorByHexString: function (hexString, lightNavigationBar, transparentNavigationBar) {
         var originalValue = hexString;
+
         hexString = normalizeHexColor(originalValue);
         if (hexString === null) {
             logInvalidColor(originalValue);
@@ -95,8 +100,26 @@ var NavigationBar = {
         }
 
         lightNavigationBar = !!lightNavigationBar;
+        transparentNavigationBar = !!transparentNavigationBar;
 
-        exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar]);
+        exec(
+            null,
+            null,
+            "NavigationBar",
+            "backgroundColorByHexString",
+            [
+                hexString,
+                lightNavigationBar,
+                transparentNavigationBar
+            ]
+        );
+
+        exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar, transparentNavigationBar]);
+
+    },
+
+    size: function (onSuccess, onError) {
+        exec(onSuccess, onError, 'NavigationBar', 'size', []);
     },
 
     hide: function () {
