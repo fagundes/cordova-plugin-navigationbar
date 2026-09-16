@@ -38,6 +38,20 @@ function ready(win) {
      }, 0);
 }
 
+function size(win) {
+     setTimeout(function () {
+         if (typeof win === "function") {
+             win({
+                 width: 0,
+                 height: 0,
+                 widthInPixels: 0,
+                 heightInPixels: 0,
+                 position: "bottom"
+             });
+         }
+     }, 0);
+}
+
 module.exports = {
     isVisible: false,
 //    styleBlackTranslucent:notSupported,
@@ -50,6 +64,7 @@ module.exports = {
     backgroundColorByHexString: notSupported,
     hide: notSupported,
     show: notSupported,
+    size: size,
     _ready: ready
 };
 

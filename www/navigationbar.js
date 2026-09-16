@@ -76,7 +76,7 @@ function normalizeHexColor(hexString) {
 var NavigationBar = {
 
     isVisible: true,
-  
+
     backgroundColorByName: function (colorname, lightNavigationBar, transparentNavigationBar) {
         if (!Object.prototype.hasOwnProperty.call(namedColors, colorname)) {
             logInvalidColor(colorname);
@@ -113,13 +113,10 @@ var NavigationBar = {
                 transparentNavigationBar
             ]
         );
-
-        exec(null, null, "NavigationBar", "backgroundColorByHexString", [hexString, lightNavigationBar, transparentNavigationBar]);
-
     },
 
     size: function (onSuccess, onError) {
-        exec(onSuccess, onError, 'NavigationBar', 'size', []);
+        exec(onSuccess, onError, "NavigationBar", "size", []);
     },
 
     hide: function () {

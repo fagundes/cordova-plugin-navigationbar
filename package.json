@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-navigationbar-color",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Cordova NavigationBar Plugin",
   "cordova": {
     "id": "cordova-plugin-navigationbar-color",
@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "test": "node tests/run.js",
-    "test:syntax": "node --check www/navigationbar.js && node --check src/browser/NavigationBarProxy.js && node --check tests/run.js && node --check tests/integration/prepare-app.js && node --check tests/integration/prepare-platform.js && node --check tests/integration/www/app.js && node --check tests/integration/inspector/www/inspector.js",
+    "test:syntax": "node --check www/navigationbar.js && node --check src/browser/NavigationBarProxy.js && node --check tests/run.js && node --check tests/integration/prepare-app.js && node --check tests/integration/www/app.js && node --check tests/integration/inspector/www/inspector.js",
     "test:package": "npm pack --dry-run"
   },
   "engines": {
@@ -30,6 +30,9 @@
       },
       "0.1.1": {
         "cordova-android": ">=7.1.4 <10.0.0"
+      },
+      "0.2.0": {
+        "cordova-android": ">=10.1.2 <16.0.0"
       }
     }
   },
