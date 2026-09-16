@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-navigationbar-color",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Cordova NavigationBar Plugin",
   "cordova": {
     "id": "cordova-plugin-navigationbar-color",
@@ -19,22 +19,30 @@
     "cordova-android"
   ],
   "scripts": {
-    "test": "npm run jshint",
-    "jshint": "node node_modules/jshint/bin/jshint www && node node_modules/jshint/bin/jshint src && node node_modules/jshint/bin/jshint tests"
+    "test": "node tests/run.js",
+    "test:syntax": "node --check www/navigationbar.js && node --check src/browser/NavigationBarProxy.js && node --check tests/run.js && node --check tests/integration/prepare-app.js && node --check tests/integration/prepare-platform.js && node --check tests/integration/www/app.js && node --check tests/integration/inspector/www/inspector.js",
+    "test:package": "npm pack --dry-run"
   },
   "engines": {
     "cordovaDependencies": {
       "0.1.0": {
         "cordova": ">=3.0.0"
       },
-      "3.0.0": {
-        "cordova": ">100"
+      "0.1.1": {
+        "cordova-android": ">=7.1.4 <10.0.0"
       }
     }
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "RELEASING.md",
+    "plugin.xml",
+    "src",
+    "www"
+  ],
   "author": "Vinicius Fagundes",
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "jshint": "^2.6.0"
-  }
+  "license": "Apache-2.0"
 }
