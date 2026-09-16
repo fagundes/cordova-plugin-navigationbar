@@ -18,16 +18,25 @@
  *
  */
 
- function notSupported(win,fail) {
-     //
-     console.log('NavigationBar is not supported');
-     setTimeout(function(){
-         win();
+function notSupported(win) {
+     console.log("NavigationBar is not supported");
+     setTimeout(function () {
+         if (typeof win === "function") {
+             win();
+         }
          // note that while it is not explicitly supported, it does not fail
          // this is really just here to allow developers to test their code in the browser
          // and if we fail, then their app might as well. -jm
-     },0);
- }
+     }, 0);
+}
+
+function ready(win) {
+     setTimeout(function () {
+         if (typeof win === "function") {
+             win(false);
+         }
+     }, 0);
+}
 
 module.exports = {
     isVisible: false,
@@ -39,9 +48,9 @@ module.exports = {
 //    styleLightContect: notSupported,
     backgroundColorByName: notSupported,
     backgroundColorByHexString: notSupported,
-//    hide: notSupported,
-//    show: notSupported,
-    _ready:notSupported
+    hide: notSupported,
+    show: notSupported,
+    _ready: ready
 };
 
 require("cordova/exec/proxy").add("NavigationBar", module.exports);
