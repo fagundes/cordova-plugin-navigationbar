@@ -4,7 +4,6 @@ var assert = require("assert");
 var childProcess = require("child_process");
 var fs = require("fs");
 var Module = require("module");
-var os = require("os");
 var path = require("path");
 
 var root = path.resolve(__dirname, "..");
@@ -95,10 +94,10 @@ test("normalizes supported RGB and ARGB color formats", function () {
         assert.deepStrictEqual(calls.map(function (call) {
             return call.args;
         }), [
-            ["#aabbcc", true],
-            ["#11aa22bb", false],
-            ["#112233", false],
-            ["#80112233", true]
+            ["#aabbcc", true, false],
+            ["#11aa22bb", false, false],
+            ["#112233", false, false],
+            ["#80112233", true, false]
         ]);
     });
 });
@@ -110,7 +109,39 @@ test("maps named colors without changing the public API", function () {
 
         assert.strictEqual(calls.length, 1);
         assert.strictEqual(calls[0].action, "backgroundColorByHexString");
-        assert.deepStrictEqual(calls[0].args, ["#0000FF", true]);
+        assert.deepStrictEqual(calls[0].args, ["#0000FF", true, false]);
+    });
+});
+
+test("passes the optional transparency flag to native code", function () {
+    withNavigationBar(true, function (navigationBar, calls) {
+        calls.length = 0;
+
+        navigationBar.backgroundColorByHexString("#123456", false, true);
+        navigationBar.backgroundColorByName("white", true, true);
+
+        assert.deepStrictEqual(calls.map(function (call) {
+            return call.args;
+        }), [
+            ["#123456", false, true],
+            ["#FFFFFF", true, true]
+        ]);
+    });
+});
+
+test("forwards size callbacks to the native action", function () {
+    withNavigationBar(true, function (navigationBar, calls) {
+        var success = function () {};
+        var failure = function () {};
+        calls.length = 0;
+
+        navigationBar.size(success, failure);
+
+        assert.strictEqual(calls.length, 1);
+        assert.strictEqual(calls[0].action, "size");
+        assert.strictEqual(calls[0].success, success);
+        assert.strictEqual(calls[0].fail, failure);
+        assert.deepStrictEqual(calls[0].args, []);
     });
 });
 
@@ -172,6 +203,7 @@ test("browser proxy exposes asynchronous no-op implementations", function () {
         assert.strictEqual(registered.service, "NavigationBar");
         assert.strictEqual(typeof registered.proxy.hide, "function");
         assert.strictEqual(typeof registered.proxy.show, "function");
+        assert.strictEqual(typeof registered.proxy.size, "function");
 
         var completed = false;
         registered.proxy.hide(function () {
@@ -188,6 +220,20 @@ test("browser proxy exposes asynchronous no-op implementations", function () {
         assert.strictEqual(initialVisibility, undefined);
         scheduled[1]();
         assert.strictEqual(initialVisibility, false);
+
+        var size;
+        registered.proxy.size(function (result) {
+            size = result;
+        });
+        assert.strictEqual(size, undefined);
+        scheduled[2]();
+        assert.deepStrictEqual(size, {
+            width: 0,
+            height: 0,
+            widthInPixels: 0,
+            heightInPixels: 0,
+            position: "bottom"
+        });
     } finally {
         delete require.cache[require.resolve(modulePath)];
         Module._load = originalLoad;
@@ -201,15 +247,15 @@ test("keeps package and plugin metadata aligned", function () {
     var packageLock = JSON.parse(fs.readFileSync(path.join(root, "package-lock.json"), "utf8"));
     var pluginXml = fs.readFileSync(path.join(root, "plugin.xml"), "utf8");
 
-    assert.strictEqual(packageJson.version, "0.1.1");
+    assert.strictEqual(packageJson.version, "0.2.0");
     assert.strictEqual(packageLock.version, packageJson.version);
     assert.strictEqual(packageLock.packages[""].version, packageJson.version);
     assert.deepStrictEqual(packageLock.packages[""].engines, packageJson.engines);
-    assert.ok(pluginXml.indexOf('version="0.1.1"') !== -1);
-    assert.ok(pluginXml.indexOf('version=">=7.1.4 &lt;10.0.0"') !== -1);
+    assert.ok(pluginXml.indexOf('version="0.2.0"') !== -1);
+    assert.ok(pluginXml.indexOf('version=">=10.1.2 &lt;16.0.0"') !== -1);
     assert.deepStrictEqual(
         Object.keys(packageJson.engines.cordovaDependencies),
-        ["0.1.0", "0.1.1"]);
+        ["0.1.0", "0.1.1", "0.2.0"]);
     assert.strictEqual(packageJson.dependencies, undefined);
     assert.strictEqual(packageJson.devDependencies, undefined);
     assert.deepStrictEqual(Object.keys(packageLock.packages), [""]);
@@ -222,59 +268,24 @@ test("does not modify status-bar fullscreen flags", function () {
     assert.strictEqual(javaSource.indexOf("FLAG_FULLSCREEN"), -1);
     assert.strictEqual(javaSource.indexOf("FLAG_FORCE_NOT_FULLSCREEN"), -1);
     assert.strictEqual(javaSource.indexOf("FLAG_TRANSLUCENT_STATUS"), -1);
-    assert.strictEqual(javaSource.indexOf("callbackContext.error"), -1);
     assert.ok(javaSource.indexOf("FLAG_TRANSLUCENT_NAVIGATION") !== -1);
     assert.ok(javaSource.indexOf("FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS") !== -1);
+    assert.ok(javaSource.indexOf("WindowInsetsController") !== -1);
+    assert.ok(javaSource.indexOf("WindowInsets.Type.navigationBars()") !== -1);
+    assert.ok(javaSource.indexOf("setNavigationBarContrastEnforced") !== -1);
     assert.ok(javaSource.indexOf("[0-9a-fA-F]{3}") !== -1);
 });
 
-test("rewrites retired repositories in generated legacy Android projects", function () {
-    var fixture = fs.mkdtempSync(path.join(os.tmpdir(), "navigationbar-platform-test-"));
-    var androidDirectory = path.join(fixture, "platforms", "android");
-    var cordovaLibDirectory = path.join(androidDirectory, "CordovaLib");
-    var canonicalRepository =
-        'maven { url "https://repo.maven.apache.org/maven2" }';
+test("pins every GitHub Action to a full commit SHA", function () {
+    var workflow = fs.readFileSync(
+        path.join(root, ".github", "workflows", "ci.yml"), "utf8");
+    var uses = workflow.match(/^\s*uses:\s+[^\s]+/gm) || [];
 
-    fs.mkdirSync(cordovaLibDirectory, { recursive: true });
-    fs.writeFileSync(path.join(androidDirectory, "build.gradle"),
-        "repositories { jcenter() }\n");
-    fs.writeFileSync(path.join(cordovaLibDirectory, "build.gradle"), [
-        "repositories { jcenter() }",
-        "cdvBuildToolsVersion = privateHelpers.findLatestInstalledBuildTools()"
-    ].join("\n"));
-    fs.writeFileSync(path.join(cordovaLibDirectory, "cordova.gradle"), [
-        "repositories { jcenter() }",
-        'implementation "com.g00fy2:versioncompare:1.3.4"',
-        "com.g00fy2.versioncompare.Version"
-    ].join("\n"));
+    assert.ok(uses.length > 0);
 
-    try {
-        var result = childProcess.spawnSync(process.execPath, [
-            path.join(root, "tests", "integration", "prepare-platform.js"),
-            fixture,
-            "27.0.3"
-        ], { encoding: "utf8" });
-        assert.strictEqual(result.status, 0, result.stderr);
-
-        var rootBuild = fs.readFileSync(
-            path.join(androidDirectory, "build.gradle"), "utf8");
-        var cordovaBuild = fs.readFileSync(
-            path.join(cordovaLibDirectory, "build.gradle"), "utf8");
-        var cordovaGradle = fs.readFileSync(
-            path.join(cordovaLibDirectory, "cordova.gradle"), "utf8");
-
-        assert.ok(rootBuild.indexOf(canonicalRepository) !== -1);
-        assert.ok(cordovaBuild.indexOf(canonicalRepository) !== -1);
-        assert.ok(cordovaGradle.indexOf(canonicalRepository) !== -1);
-        assert.strictEqual(rootBuild.indexOf("jcenter()"), -1);
-        assert.strictEqual(cordovaBuild.indexOf("jcenter()"), -1);
-        assert.strictEqual(cordovaGradle.indexOf("jcenter()"), -1);
-        assert.ok(cordovaBuild.indexOf("cdvBuildToolsVersion = '27.0.3'") !== -1);
-        assert.ok(cordovaGradle.indexOf(
-            "io.github.g00fy2:versioncompare:1.5.0") !== -1);
-    } finally {
-        fs.rmSync(fixture, { recursive: true, force: true });
-    }
+    uses.forEach(function (entry) {
+        assert.ok(/@[0-9a-f]{40}(?:\s+#.*)?$/.test(entry), entry);
+    });
 });
 
 test("all shipped JavaScript parses successfully", function () {
@@ -282,7 +293,6 @@ test("all shipped JavaScript parses successfully", function () {
         path.join(root, "www", "navigationbar.js"),
         path.join(root, "src", "browser", "NavigationBarProxy.js"),
         path.join(root, "tests", "integration", "prepare-app.js"),
-        path.join(root, "tests", "integration", "prepare-platform.js"),
         path.join(root, "tests", "integration", "www", "app.js"),
         path.join(root, "tests", "integration", "inspector", "www", "inspector.js"),
         __filename

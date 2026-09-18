@@ -14,142 +14,312 @@ jobs:
   quality:
     name: Quality (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         node: [20, 22]
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ matrix.node }}
           cache: npm
+
       - name: Validate lockfile
         run: npm ci --ignore-scripts --no-audit
+
       - name: Run tests
         run: npm test
+
       - name: Audit all package dependencies
         run: npm audit --audit-level=low
+
       - name: Inspect npm package
         run: npm pack --dry-run
 
   android-build:
     name: Build cordova-android ${{ matrix.cordova_android }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - cordova_android: 7.1.4
-            compile_sdk: 27
-            build_tools: 27.0.3
-            bootstrap_gradle: 4.10.3
-          - cordova_android: 8.1.0
-            compile_sdk: 28
-            build_tools: 28.0.3
-            bootstrap_gradle: 4.10.3
-          - cordova_android: 9.1.0
-            compile_sdk: 29
-            build_tools: 29.0.3
-            bootstrap_gradle: 6.5
+          - cordova_android: 10.1.2
+            compile_sdk: 30
+            build_tools: 30.0.3
+            java: 11
+            gradle: 7.1.1
+
+          - cordova_android: 11.0.0
+            compile_sdk: 32
+            build_tools: 32.0.0
+            java: 11
+            gradle: 7.4.2
+
+          - cordova_android: 12.0.1
+            compile_sdk: 33
+            build_tools: 33.0.2
+            java: 11
+            gradle: 7.6
+
+          - cordova_android: 13.0.0
+            compile_sdk: 34
+            build_tools: 34.0.0
+            java: 17
+            gradle: 8.7
+
+          - cordova_android: 14.0.1
+            compile_sdk: 35
+            build_tools: 35.0.0
+            java: 17
+            gradle: 8.13
+
+          - cordova_android: 15.1.0
+            compile_sdk: 36
+            build_tools: 36.0.0
+            java: 17
+            gradle: 8.14.2
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 12.22.12
+          node-version: 20
+
+      # Modern Android SDK command-line tools require Java 17.
+      - name: Set up JDK 17 for Android SDK tools
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install Android SDK for build
         run: >-
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           "platforms;android-${{ matrix.compile_sdk }}"
           "build-tools;${{ matrix.build_tools }}"
-      - name: Set up JDK 8
+
+      # Switch to the JDK required by the selected cordova-android version.
+      - name: Set up build JDK ${{ matrix.java }}
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           distribution: temurin
-          java-version: 8
-      - name: Set up legacy Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-        with:
-          gradle-version: ${{ matrix.bootstrap_gradle }}
-      - name: Install legacy Cordova CLI
-        run: npm install --global cordova@9.0.0
+          java-version: ${{ matrix.java }}
+
+      # Install Gradle directly instead of using setup-gradle.
+      # This avoids injecting Gradle init scripts that may not be compatible
+      # with older Gradle versions used by legacy cordova-android releases.
+      - name: Install Gradle ${{ matrix.gradle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          GRADLE_DIR="$RUNNER_TEMP/gradle-${{ matrix.gradle }}"
+
+          wget -q \
+            "https://services.gradle.org/distributions/gradle-${{ matrix.gradle }}-bin.zip" \
+            -O "$RUNNER_TEMP/gradle.zip"
+
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+
+          echo "$GRADLE_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@13.0.0
+
+      - name: Show build toolchain
+        shell: bash
+        run: |
+          echo "Java:"
+          java -version
+
+          echo
+          echo "Gradle:"
+          gradle --version
+
+          echo
+          echo "Node:"
+          node --version
+
+          echo
+          echo "Cordova:"
+          cordova --version
+
       - name: Build integration application
         run: tests/integration/run-android.sh "${{ matrix.cordova_android }}"
 
   android-emulator:
     name: Emulator API ${{ matrix.api }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - api: 19
-            cordova_android: 7.1.4
-            compile_sdk: 27
-            build_tools: 27.0.3
-            bootstrap_gradle: 4.10.3
-            target: default
-            arch: x86
-          - api: 21
-            cordova_android: 7.1.4
-            compile_sdk: 27
-            build_tools: 27.0.3
-            bootstrap_gradle: 4.10.3
-            target: default
-            arch: x86
+          - api: 23
+            cordova_android: 10.1.2
+            compile_sdk: 30
+            build_tools: 30.0.3
+            java: 11
+            gradle: 7.1.1
+
           - api: 26
-            cordova_android: 8.1.0
-            compile_sdk: 28
-            build_tools: 28.0.3
-            bootstrap_gradle: 4.10.3
             target: google_apis
-            arch: x86
+            cordova_android: 10.1.2
+            compile_sdk: 30
+            build_tools: 30.0.3
+            java: 11
+            gradle: 7.1.1
+
           - api: 29
-            cordova_android: 9.1.0
-            compile_sdk: 29
-            build_tools: 29.0.3
-            bootstrap_gradle: 6.5
-            target: google_apis
-            arch: x86
+            cordova_android: 10.1.2
+            compile_sdk: 30
+            build_tools: 30.0.3
+            java: 11
+            gradle: 7.1.1
+
+          - api: 30
+            cordova_android: 10.1.2
+            compile_sdk: 30
+            build_tools: 30.0.3
+            java: 11
+            gradle: 7.1.1
+
+          # - api: 32
+          #   cordova_android: 11.0.0
+          #   compile_sdk: 32
+          #   build_tools: 32.0.0
+          #   java: 11
+          #   gradle: 7.4.2
+
+          # - api: 35
+          #   cordova_android: 14.0.1
+          #   compile_sdk: 35
+          #   build_tools: 35.0.0
+          #   java: 17
+          #   gradle: 8.13
+
+          # - api: 36
+          #   cordova_android: 15.1.0
+          #   compile_sdk: 36
+          #   build_tools: 36.0.0
+          #   java: 17
+          #   gradle: 8.14.2
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 12.22.12
-      - name: Install Android SDK for build
-        run: >-
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          "platforms;android-${{ matrix.compile_sdk }}"
-          "build-tools;${{ matrix.build_tools }}"
-      - name: Set up JDK 8
+          node-version: 20
+
+      # Install the JDK that will be used by the Cordova build.
+      - name: Set up build JDK ${{ matrix.java }}
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           distribution: temurin
-          java-version: 8
-      - name: Set up legacy Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
-        with:
-          gradle-version: ${{ matrix.bootstrap_gradle }}
-      - name: Install legacy Cordova CLI
-        run: npm install --global cordova@9.0.0
-      - name: Restore JDK 17 for emulator tooling
+          java-version: ${{ matrix.java }}
+
+      # Save the build JDK path before switching the active runtime to Java 17.
+      - name: Save build JAVA_HOME
+        shell: bash
+        run: |
+          echo "BUILD_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "Build JAVA_HOME=$JAVA_HOME"
+
+      # Android SDK tools and android-emulator-runner require Java 17.
+      - name: Set up JDK 17 for Android tools
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           distribution: temurin
           java-version: 17
+
+      # Install the compile SDK and build tools required by the selected
+      # cordova-android version. Emulator system images are handled separately
+      # by android-emulator-runner.
+      - name: Install Android SDK for build
+        shell: bash
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-${{ matrix.compile_sdk }}" \
+            "build-tools;${{ matrix.build_tools }}"
+
+      # Install Gradle directly to preserve compatibility with older
+      # cordova-android releases and avoid setup-gradle init scripts.
+      - name: Install Gradle ${{ matrix.gradle }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          GRADLE_DIR="$RUNNER_TEMP/gradle-${{ matrix.gradle }}"
+
+          wget -q \
+            "https://services.gradle.org/distributions/gradle-${{ matrix.gradle }}-bin.zip" \
+            -O "$RUNNER_TEMP/gradle.zip"
+
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+
+          echo "$GRADLE_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Install Cordova CLI
+        run: npm install --global cordova@13.0.0
+
+      - name: Show emulator toolchain
+        shell: bash
+        run: |
+          echo "Android tools Java:"
+          java -version
+
+          echo
+          echo "Cordova build Java:"
+          "$BUILD_JAVA_HOME/bin/java" -version
+
+          echo
+          echo "Gradle executable:"
+          which gradle
+
+          echo
+          echo "Node:"
+          node --version
+
+          echo
+          echo "Cordova:"
+          cordova --version
+
+      # Keep Java 17 active while android-emulator-runner installs and starts
+      # the emulator. Once the emulator is ready, switch back to the JDK
+      # required by the selected cordova-android release.
       - name: Run integration tests
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          BUILD_JAVA_HOME: ${{ env.BUILD_JAVA_HOME }}
+          ANDROID_API: ${{ matrix.api }}
         with:
           api-level: ${{ matrix.api }}
-          target: ${{ matrix.target }}
-          arch: ${{ matrix.arch }}
+          target: ${{ matrix.target || 'default' }}
+          arch: x86_64
           profile: pixel
+          cores: 2
+          ram-size: 3072M
+          heap-size: 512M
           disable-animations: true
-          script: JAVA_HOME="$JAVA_HOME_8_X64" PATH="$JAVA_HOME_8_X64/bin:$PATH" RUN_EMULATOR_TESTS=true tests/integration/run-android.sh "${{ matrix.cordova_android }}"
+          script: >-
+            export JAVA_HOME="$BUILD_JAVA_HOME" &&
+            export PATH="$JAVA_HOME/bin:$PATH" &&
+            echo "Integration build toolchain:" &&
+            echo "JAVA_HOME=$JAVA_HOME" &&
+            java -version &&
+            gradle --version &&
+            RUN_EMULATOR_TESTS=true tests/integration/run-android.sh "${{ matrix.cordova_android }}"
