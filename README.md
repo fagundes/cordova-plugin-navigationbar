@@ -1,35 +1,39 @@
 # cordova-plugin-navigationbar-color
 
-Cordova plugin for controlling the Android system navigation bar on legacy
-Android applications.
+Cordova plugin for controlling the Android system navigation bar.
 
 ## Compatibility
 
-Version 0.1.1 is the maintained legacy release. It is tested with the following
-platform range:
+The 0.2.x release line supports Android APIs 22–36 and cordova-android
+`>=10.1.2 <16.0.0`. The following table lists the build combinations validated
+by the project:
 
-| cordova-android | Android API | Android version |
-| --- | --- | --- |
-| 7.1.4 | 19-27 | 4.4-8.1 |
-| 8.1.0 | 19-28 | 4.4-9 |
-| 9.1.0 | 22-29 | 5.1-10 |
+| cordova-android | Compile API | Minimum Android API |
+| --- | ---: | ---: |
+| 10.1.2 | 30 | 22 |
+| 11.0.0 | 32 | 22 |
+| 12.0.1 | 33 | 24 |
+| 13.0.0 | 34 | 24 |
+| 14.0.1 | 35 | 24 |
+| 15.1.0 | 36 | 24 |
 
-Feature availability depends on the device API:
+Version `0.1.1` remains available for cordova-android 7–9 and Android APIs
+19–29.
 
 | Feature | Minimum API |
-| --- | --- |
-| Show or hide the navigation bar | 19 (Android 4.4) |
-| Set the navigation bar color | 21 (Android 5.0) |
-| Use dark navigation bar icons | 26 (Android 8.0) |
+| --- | ---: |
+| Show, hide, and color the navigation bar | 22 |
+| Use dark navigation bar icons | 26 |
+| Use native window-insets control and transparency | 30 |
 
-Android 4.4-10 and cordova-android 7-9 are end-of-life platforms. This release
-keeps the plugin's own dependency tree free of known vulnerabilities, but it
-cannot make an end-of-life Android or Cordova toolchain secure.
+Some versions in the compatibility matrix are end of life. The package has no
+npm runtime or development dependencies, but it cannot make the host Android,
+Cordova, Java, Gradle, or WebView toolchain secure.
 
 ## Installation
 
 ```sh
-cordova plugin add cordova-plugin-navigationbar-color@0.1.1
+cordova plugin add cordova-plugin-navigationbar-color@0.2.0
 ```
 
 The `NavigationBar` global becomes available after Cordova's `deviceready`
@@ -49,48 +53,80 @@ Use dark navigation icons on a light background on Android 8.0 or newer:
 <preference name="NavigationBarLight" value="true" />
 ```
 
-## API
+Make the navigation bar transparent and extend the WebView behind it on Android
+11 or newer:
 
-### `NavigationBar.backgroundColorByHexString(color, lightNavigationBar)`
-
-Sets the navigation bar color. Accepted hexadecimal formats are `RGB`, `ARGB`,
-`RRGGBB`, and `AARRGGBB`, with or without the leading `#`. Short formats are
-expanded before being sent to Android. Invalid values are logged and ignored.
-
-```js
-NavigationBar.backgroundColorByHexString("#1e88e5", false);
-NavigationBar.backgroundColorByHexString("#fff", true);
+```xml
+<preference name="NavigationBarTransparent" value="true" />
 ```
 
-### `NavigationBar.backgroundColorByName(name, lightNavigationBar)`
+## API
+
+### `NavigationBar.backgroundColorByHexString(color, lightNavigationBar, transparentNavigationBar)`
+
+Sets the navigation bar color. Accepted hexadecimal formats are `RGB`, `ARGB`,
+`RRGGBB`, and `AARRGGBB`, with or without the leading `#`. Invalid values
+are logged and ignored.
+
+The boolean arguments are optional and default to `false`. Transparency is
+supported on Android 11 or newer.
+
+```js
+NavigationBar.backgroundColorByHexString("#1e88e5");
+NavigationBar.backgroundColorByHexString("#fff", true);
+NavigationBar.backgroundColorByHexString("#000000", false, true);
+```
+
+### `NavigationBar.backgroundColorByName(name, lightNavigationBar, transparentNavigationBar)`
 
 Sets one of the built-in colors: `black`, `darkGray`, `lightGray`, `white`,
-`gray`, `red`, `green`, `blue`, `cyan`, `yellow`, `magenta`, `orange`, `purple`,
-or `brown`.
+`gray`, `red`, `green`, `blue`, `cyan`, `yellow`, `magenta`, `orange`,
+`purple`, or `brown`.
 
 ```js
 NavigationBar.backgroundColorByName("white", true);
+NavigationBar.backgroundColorByName("black", false, true);
 ```
 
 ### `NavigationBar.hide()` and `NavigationBar.show()`
 
-Hides the navigation bar in immersive sticky mode or shows it again. These
-methods do not change the Android status bar.
+Hides the navigation bar in immersive mode or shows it again. The requested
+state is reapplied after focus, configuration, and resume events. These methods
+do not change the Android status bar.
 
 ```js
 NavigationBar.hide();
 NavigationBar.show();
 ```
 
+### `NavigationBar.size(success, error)`
+
+Returns the stable navigation bar dimensions and position, including while the
+bar is hidden:
+
+```js
+NavigationBar.size(function (size) {
+    console.log(size.width);
+    console.log(size.height);
+    console.log(size.widthInPixels);
+    console.log(size.heightInPixels);
+    console.log(size.position); // "bottom", "left", or "right"
+}, function (error) {
+    console.error(error);
+});
+```
+
+`width` and `height` use density-independent pixels. `widthInPixels` and
+`heightInPixels` use physical pixels. Query the value again after a `resize`
+or orientation change.
+
 ### `NavigationBar.isVisible`
 
-Contains the initial native visibility reported at startup and is updated when
-`hide()` or `show()` is called. It is a compatibility cache, not a live query of
-changes made outside the plugin.
+Contains the native visibility reported at startup and is updated when
+`hide()` or `show()` is called. It is a compatibility cache, not a live
+query of changes made outside the plugin.
 
 ## Development
-
-The repository has no npm runtime or development dependencies.
 
 ```sh
 npm test
